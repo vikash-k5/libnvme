@@ -87,12 +87,11 @@ static int nvme_submit_passthru64(struct dev_handle *hnd, unsigned long ioctl_cm
 				  __u64 *result)
 {
 	int err = -1;
+	__u64 cmd_result;
 
 	if (hnd->dev_type == NVME_DEV_DIRECT) {
 		err = ioctl(hnd->fd, ioctl_cmd, cmd);
-
-                if (err >= 0 && result)
-                        *result = cmd->result;
+		cmd_result = cmd->result;
         } else if (hnd->dev_type == NVME_DEV_XNVME) {
                 struct xnvme_dev *dev = (struct xnvme_dev *)hnd->xdev;
                 struct xnvme_cmd_ctx ctx = xnvme_cmd_ctx_from_dev(dev);
@@ -120,10 +119,11 @@ static int nvme_submit_passthru64(struct dev_handle *hnd, unsigned long ioctl_cm
 
                 memcpy((int *)cmd->addr, dbuf, cmd->data_len);
                 xnvme_buf_free(dev, dbuf);
+		cmd_result = ctx.cpl.result;
         }
 
 	if (err >= 0 && result)
-		*result = cmd->result;
+		*result = cmd_result;
 	return err;
 }
 
@@ -131,12 +131,11 @@ static int nvme_submit_passthru(struct dev_handle *hnd, unsigned long ioctl_cmd,
 				struct nvme_passthru_cmd *cmd, __u32 *result)
 {
 	int err = -1;
+	__u32 cmd_result;
 
 	if (hnd->dev_type == NVME_DEV_DIRECT) {
 		err = ioctl(hnd->fd, ioctl_cmd, cmd);
-
-		if (err >= 0 && result)
-			*result = cmd->result;
+		cmd_result = cmd->result;
 	} else if (hnd->dev_type == NVME_DEV_XNVME) {
 		struct xnvme_cmd_ctx ctx = xnvme_cmd_ctx_from_dev(hnd->xdev);
 		void *dbuf = NULL;
@@ -163,10 +162,11 @@ static int nvme_submit_passthru(struct dev_handle *hnd, unsigned long ioctl_cmd,
 
 		memcpy((int *)cmd->addr, dbuf, cmd->data_len);
                 xnvme_buf_free(hnd->xdev, dbuf);
+		cmd_result = ctx.cpl.cdw0;
         }
 
 	if (err >= 0 && result)
-		*result = cmd->result;
+		*result = cmd_result;
 	return err;
 }
 
